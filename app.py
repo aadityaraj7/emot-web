@@ -675,4 +675,17 @@ async def StarTinG():
 
 
 if __name__ == '__main__':
-    asyncio.run(StarTinG())
+    # 1. Sabse pehle Flask ko thread mein start karein
+    # Isse Render ko turant port mil jayega
+    print("Starting Flask Server for Render Health Check...")
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+
+    # 2. Thoda intezar karein taaki port bind ho jaye
+    time.sleep(2)
+
+    # 3. Ab Bot ka asynchronous logic start karein
+    try:
+        asyncio.run(StarTinG())
+    except Exception as e:
+        print(f"Main Bot Error: {e}")
