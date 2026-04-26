@@ -583,9 +583,10 @@ def join_team():
 
 
 def run_flask():
-    port = int(os.environ.get("PORT", 10000))
+    # Render environmental variable 'PORT' provide karta hai
+    port = int(os.environ.get("PORT", 10000)) 
+    # host='0.0.0.0' hona mandatory hai Render ke liye
     app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
-
 
 # ---------------------- MAIN BOT SYSTEM ----------------------
 
