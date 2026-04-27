@@ -515,33 +515,46 @@ async def TcPChaT(ip, port, AutHToKen, key, iv, LoGinDaTaUncRypTinG, ready_event
 
 loop = None
 
+# Session track karne ke liye global variable
+authorized_sessions = {} 
+
 async def perform_emote(team_code: str, uids: list, emote_id: int):
-    global key, iv, region, online_writer, BOT_UID
+    global key, iv, region, online_writer, BOT_UID, authorized_sessions
 
     if online_writer is None:
         raise Exception("Bot not connected")
 
     try:
-        # 1. JOIN SQUAD (super fast)
-        EM = await GenJoinSquadsPacket(team_code, key, iv)
-        await SEndPacKeT(None, online_writer, 'OnLine', EM)
-        await asyncio.sleep(0.12)  # minimal sync delay
+        # 1. PEHELI BAAR JOIN (Authorization lene ke liye)
+        if team_code not in authorized_sessions:
+            # Join Packet
+            EM = await GenJoinSquadsPacket(team_code, key, iv)
+            await SEndPacKeT(None, online_writer, 'OnLine', EM)
+            
+            # Turant Exit (Taki group mein na dikhe)
+            LV = await ExiT(BOT_UID, key, iv)
+            await SEndPacKeT(None, online_writer, 'OnLine', LV)
+            
+            # Session ko 'Authorized' mark kar dein
+            authorized_sessions[team_code] = True
+            await asyncio.sleep(0.2)
 
-        # 2. PERFORM EMOTE instantly
+        # 2. REMOTE EMOTE (Ab bot group mein nahi aayega)
         for uid_str in uids:
-            uid = int(uid_str)
-            H = await Emote_k(uid, emote_id, key, iv, region)
-            await SEndPacKeT(None, online_writer, 'OnLine', H)
+            if uid_str.strip():
+                uid = int(uid_str.strip())
+                # Seedha server ko emote command bhejna bina join kiye
+                H = await Emote_k(uid, emote_id, key, iv, region)
+                await SEndPacKeT(None, online_writer, 'OnLine', H)
+                # Fast firing speed
+                await asyncio.sleep(0.1) 
 
-        # 3. LEAVE SQUAD instantly (correct bot UID)
-        LV = await ExiT(BOT_UID, key, iv)
-        await SEndPacKeT(None, online_writer, 'OnLine', LV)
-        await asyncio.sleep(0.03)
-
-        return {"status": "success", "message": "Emote done & bot left instantly"}
+        return {"status": "success", "message": "Ghost Emote Injected"}
 
     except Exception as e:
-        raise Exception(f"Failed to perform emote: {str(e)}")
+        if team_code in authorized_sessions: del authorized_sessions[team_code]
+        raise Exception(f"Ghost Mode Failed: {str(e)}")
+
 
 
 @app.route('/join')
