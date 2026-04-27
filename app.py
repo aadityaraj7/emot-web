@@ -515,45 +515,48 @@ async def TcPChaT(ip, port, AutHToKen, key, iv, LoGinDaTaUncRypTinG, ready_event
 
 loop = None
 
-# Session track karne ke liye global variable
-authorized_sessions = {} 
+# Isse track rahega ki bot kis squad mein baitha hai
+active_session_tc = None 
 
 async def perform_emote(team_code: str, uids: list, emote_id: int):
-    global key, iv, region, online_writer, BOT_UID, authorized_sessions
+    global key, iv, region, online_writer, BOT_UID, active_session_tc
 
     if online_writer is None:
         raise Exception("Bot not connected")
 
     try:
-        # 1. PEHELI BAAR JOIN (Authorization lene ke liye)
-        if team_code not in authorized_sessions:
-            # Join Packet
+        # 1. AGAR NAYA TEAM CODE HAI, TOH HI JOIN KAREIN
+        if active_session_tc != team_code:
+            # Purane squad se exit packet bhejna zaroori hai
+            LV = await ExiT(BOT_UID, key, iv)
+            await SEndPacKeT(None, online_writer, 'OnLine', LV)
+            await asyncio.sleep(0.2)
+
+            # Naya Squad Join
             EM = await GenJoinSquadsPacket(team_code, key, iv)
             await SEndPacKeT(None, online_writer, 'OnLine', EM)
             
-            # Turant Exit (Taki group mein na dikhe)
-            LV = await ExiT(BOT_UID, key, iv)
-            await SEndPacKeT(None, online_writer, 'OnLine', LV)
-            
-            # Session ko 'Authorized' mark kar dein
-            authorized_sessions[team_code] = True
-            await asyncio.sleep(0.2)
+            active_session_tc = team_code
+            await asyncio.sleep(0.4) # Initial Auth delay
 
-        # 2. REMOTE EMOTE (Ab bot group mein nahi aayega)
+        # 2. EMOTE FIRE (Bot ab group ke andar hi hai, session active hai)
         for uid_str in uids:
             if uid_str.strip():
                 uid = int(uid_str.strip())
-                # Seedha server ko emote command bhejna bina join kiye
                 H = await Emote_k(uid, emote_id, key, iv, region)
                 await SEndPacKeT(None, online_writer, 'OnLine', H)
-                # Fast firing speed
+                # Bijli ki raftar se firing
                 await asyncio.sleep(0.1) 
 
-        return {"status": "success", "message": "Ghost Emote Injected"}
+        # 🚀 CRITICAL: Hum 'Exit' packet nahi bhej rahe. 
+        # Bot group mein authorized rahega aur naye commands ka wait karega.
+
+        return {"status": "success", "message": "Injected & Session Maintained"}
 
     except Exception as e:
-        if team_code in authorized_sessions: del authorized_sessions[team_code]
-        raise Exception(f"Ghost Mode Failed: {str(e)}")
+        active_session_tc = None 
+        raise Exception(f"Injection Failed: {str(e)}")
+
 
 
 
